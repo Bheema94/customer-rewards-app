@@ -1,0 +1,19 @@
+.wrapper {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+}
+
+.error {
+  color: #ff4d4f;
+  font-weight: bold;
+  text-align: center;
+  padding: 1rem;
+}
+
+.noData {
+  color: #888;
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
+}
