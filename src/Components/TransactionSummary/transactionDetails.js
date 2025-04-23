@@ -1,14 +1,13 @@
-// TransactionDetails.jsx (Step 3)
-
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import useFetch from "../../Hooks/useFetchHook";
 import { fetchCustomer } from "../../Services/api";
-import Table from "../Table/Table";
+import Table from "../Table/table";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import { Pagination, Spinner, FilterBar } from "../../Shared";
-import styles from "./TransactionDetails.module.scss";
+import styles from "./transactionDetails.module.scss";
+import PropTypes from "prop-types";
 
 const TransactionDetails = () => {
   const { customerId } = useParams();
@@ -35,11 +34,18 @@ const TransactionDetails = () => {
       dayjs(txn.date).format("MMM-YYYY")
     );
     const unique = [...new Set(all)];
-    return unique.slice(-3).reverse();
+    return unique.reverse();
+  }, [customer]);
+
+  const allYears = useMemo(() => {
+    const all = customer?.transactions?.map((txn) =>
+      dayjs(txn.date).format("YYYY")
+    );
+    return [...new Set(all)].sort((a, b) => b - a); 
   }, [customer]);
 
   const filteredTransactions = useMemo(() => {
-    const filtered =
+    return (
       customer?.transactions
         ?.filter((txn) => {
           const txnDate = dayjs(txn.date);
@@ -51,17 +57,22 @@ const TransactionDetails = () => {
         ?.map((txn) => ({
           ...txn,
           rewardPoints: calculateRewardPoints(txn.amount),
-        })) || [];
-
-    return filtered;
+        })) || []
+    );
   }, [customer, selectedMonth, selectedYear]);
 
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredTransactions.slice(
-    indexOfFirstRow,
-    indexOfLastRow
-  );
+  const currentRows = useMemo(() => {
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    return filteredTransactions.slice(indexOfFirstRow, indexOfLastRow);
+  }, [filteredTransactions, currentPage, rowsPerPage]);
+
+  const handleFilterChange = useCallback((month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setCurrentPage(1);
+    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
+  }, [navigate, customerId]);
 
   const transactionColumns = [
     { header: "Transaction Date", accessor: "date" },
@@ -75,14 +86,8 @@ const TransactionDetails = () => {
         availableMonths={allMonths}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
-        onFilterChange={(month, year) => {
-          setSelectedMonth(month);
-          setSelectedYear(year);
-          setCurrentPage(1);
-          navigate(
-            `/rewards/${customerId}/transactions?month=${month}&year=${year}`
-          );
-        }}
+        onFilterChange={handleFilterChange}
+        availableYears={allYears}
       />
 
       <h2>
@@ -93,33 +98,44 @@ const TransactionDetails = () => {
         <Spinner />
       ) : error ? (
         <div className={styles.error}>Error loading customer data</div>
+      ) : filteredTransactions.length === 0 ? (
+        <div className={styles.noData}>
+          No transactions found for the selected month and year.
+        </div>
       ) : (
         <>
-          {filteredTransactions.length === 0 ? (
-            <div className={styles.noData}>
-              No transactions found for the selected month and year.
-            </div>
-          ) : (
-            <>
-              <Table
-                data={currentRows}
-                columns={transactionColumns}
-                loadingSpinner={loading}
-                error={error}
-                getData={refetch}
-              />
-              <Pagination
-                totalItems={filteredTransactions.length}
-                itemsPerPage={rowsPerPage}
-                currentPage={currentPage}
-                onPageChange={setCurrentPage}
-              />
-            </>
-          )}
+          <Table
+            data={currentRows}
+            columns={transactionColumns}
+            loadingSpinner={loading}
+            error={error}
+            getData={refetch}
+          />
+          <Pagination
+            totalItems={filteredTransactions.length}
+            itemsPerPage={rowsPerPage}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
         </>
       )}
     </div>
   );
+};
+
+TransactionDetails.propTypes = {
+  customerId: PropTypes.string,
+  defaultMonth: PropTypes.string,
+  defaultYear: PropTypes.string,
+  initialCustomerData: PropTypes.shape({
+    name: PropTypes.string,
+    transactions: PropTypes.arrayOf(
+      PropTypes.shape({
+        date: PropTypes.string.isRequired,
+        amount: PropTypes.number.isRequired,
+      })
+    ),
+  }),
 };
 
 export default TransactionDetails;

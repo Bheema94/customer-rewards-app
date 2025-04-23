@@ -1,12 +1,10 @@
 import React from "react";
-import styles from "./Table.module.scss";
+import styles from "./table.module.scss";
+import PropTypes from "prop-types";
 
 const Table = ({
   data = [],
   columns = [],
-  loadingSpinner = false,
-  error = null,
-  getData = () => null,
   onRowClick = () => null,
 }) => {
   return (
@@ -35,6 +33,17 @@ const Table = ({
       </table>
     </div>
   );
+};
+
+Table.propTypes = {
+  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  columns: PropTypes.arrayOf(
+    PropTypes.shape({
+      header: PropTypes.string.isRequired,
+      accessor: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onRowClick: PropTypes.func
 };
 
 export default Table;

@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
-import Table from "../Table/Table";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import Table from "../Table/table";
 import { fetchCustomer } from "../../Services/api";
 import useFetch from "../../Hooks/useFetchHook";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import dayjs from "dayjs";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { Pagination, Spinner,FilterBar } from "../../Shared";
-import styles from "./MonthlySummary.module.scss";
+import { Pagination, Spinner, FilterBar } from "../../Shared";
+import styles from "./monthlySummary.module.scss";
+import PropTypes from "prop-types";
 
 const MonthlySummary = () => {
   const { customerId } = useParams();
@@ -19,8 +20,7 @@ const MonthlySummary = () => {
   const {
     data: customer,
     loading,
-    error,
-    refetch,
+    error
   } = useFetch(() => fetchCustomer(customerId));
 
   const customerUpdateData = useMemo(() => {
@@ -49,14 +49,21 @@ const MonthlySummary = () => {
   }, [customer]);
 
   const allMonths = useMemo(() => {
-    const all = customerUpdateData?.monthlyRewards?.map((item) => item.month);
-    return all?.slice(-3).reverse();
+    return (customerUpdateData?.monthlyRewards?.map((item) => item.month)).reverse();
+  }, [customerUpdateData]);
+
+  const allYears = useMemo(() => {
+    return customerUpdateData?.monthlyRewards?.reduce((accumulator, item) => {
+      const year = item.month.split("-")[1];
+      if (!accumulator.includes(year)) {
+        accumulator.push(year);
+      }
+      return accumulator;
+    }, []).reverse();
   }, [customerUpdateData]);
 
   const defaultMonth = allMonths?.[0];
-  const [selectedMonth, setSelectedMonth] = useState(
-    monthFromQuery || defaultMonth
-  );
+  const [selectedMonth, setSelectedMonth] = useState(monthFromQuery || defaultMonth);
   const [selectedYear, setSelectedYear] = useState(yearFromQuery || "2025");
 
   useEffect(() => {
@@ -64,18 +71,6 @@ const MonthlySummary = () => {
       setSelectedMonth(allMonths[0]);
     }
   }, [allMonths, monthFromQuery]);
-
-  const filteredMonthData = useMemo(() => {
-    return customerUpdateData?.monthlyRewards?.find((item) => {
-      const [month, year] = item.month.split("-");
-      return item.month === selectedMonth && year === selectedYear;
-    });
-  }, [selectedMonth, selectedYear, customerUpdateData]);
-
-  const monthlyRewardsColumns = [
-    { header: "Month", accessor: "month" },
-    { header: "Total Points", accessor: "totalPoints" },
-  ];
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -91,20 +86,35 @@ const MonthlySummary = () => {
     );
   }, [customerUpdateData, indexOfFirstRow, indexOfLastRow]);
 
+  const handleFilterChange = useCallback((month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
+  }, [navigate, customerId]);
+
+  const handleRowClick = useCallback((row) => {
+    const [month, year] = row.month.split("-");
+    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
+  }, [navigate, customerId]);
+
+  const monthlyRewardsColumns = [
+    { header: "Month", accessor: "month" },
+    { header: "Total Points", accessor: "totalPoints" },
+  ];
+
   return (
     <div className={styles.wrapper}>
       <FilterBar
         availableMonths={allMonths}
+        availableYears={allYears}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
-        onFilterChange={(month, year) => {
-          setSelectedMonth(month);
-          setSelectedYear(year);
-          navigate(
-            `/rewards/${customerId}/transactions?month=${month}&year=${year}`
-          );
-        }}
+        onFilterChange={handleFilterChange}
       />
+
+      <h2>
+        Monthly Summary Reward Points
+      </h2>
 
       {loading ? (
         <Spinner />
@@ -117,12 +127,7 @@ const MonthlySummary = () => {
           <Table
             data={currentRows}
             columns={monthlyRewardsColumns}
-            onRowClick={(row) => {
-              const [month, year] = row.month.split("-");
-              navigate(
-                `/rewards/${customerId}/transactions?month=${month}&year=${year}`
-              );
-            }}
+            onRowClick={handleRowClick}
           />
           <Pagination
             totalItems={customerUpdateData?.monthlyRewards?.length || 0}
@@ -134,6 +139,21 @@ const MonthlySummary = () => {
       )}
     </div>
   );
+};
+
+MonthlySummary.propTypes = {
+  customerId: PropTypes.string,
+  defaultMonth: PropTypes.string,
+  defaultYear: PropTypes.string,
+  initialCustomerData: PropTypes.shape({
+    name: PropTypes.string,
+    transactions: PropTypes.arrayOf(
+      PropTypes.shape({
+        amount: PropTypes.number.isRequired,
+        date: PropTypes.string.isRequired,
+      })
+    ),
+  }),
 };
 
 export default MonthlySummary;

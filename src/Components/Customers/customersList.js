@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
-import Table from "../Table/Table";
+import PropTypes from "prop-types";
+import Table from "../Table/table";
 import { fetchTransactions } from "../../Services/api";
 import useFetch from "../../Hooks/useFetchHook";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "../../Shared";
-
-import styles from "./CustomersList.module.scss";
+import styles from "./customersList.module.scss";
 
 const CustomersList = () => {
   const navigate = useNavigate();
@@ -15,7 +15,6 @@ const CustomersList = () => {
     data,
     loading: loadingSpinner,
     error,
-    refetch: fetchData,
   } = useFetch(fetchTransactions, []);
 
   const customers = useMemo(() => {
@@ -57,6 +56,25 @@ const CustomersList = () => {
       )}
     </div>
   );
+};
+
+
+CustomersList.propTypes = {
+  customers: PropTypes.arrayOf(
+    PropTypes.shape({
+      customerId: PropTypes.string.isRequired,
+      firstName: PropTypes.string.isRequired,
+      lastName: PropTypes.string.isRequired,
+      email: PropTypes.string.isRequired,
+      transactions: PropTypes.arrayOf(
+        PropTypes.shape({
+          transactionId: PropTypes.string.isRequired,
+          amount: PropTypes.number.isRequired,
+          date: PropTypes.string.isRequired,
+        })
+      ).isRequired,
+    })
+  ),
 };
 
 export default CustomersList;

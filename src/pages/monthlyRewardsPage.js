@@ -1,5 +1,5 @@
 import React from "react";
-import MonthlySummary from "../Components/RewardsSummary/MonthlySummary";
+import MonthlySummary from "../Components/RewardsSummary/monthlySummary";
 
 const MonthlyRewardsPage = () => {
   return <MonthlySummary />;

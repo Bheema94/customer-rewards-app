@@ -3,11 +3,11 @@ import dayjs from "dayjs";
 export const calculateRewardPoints = (amount) => {
   let points = 0;
   if (amount > 100) {
-    points += (amount - 100) * 2 + 50; // $50–$100 → 1pt each = 50pts
+    points += (amount - 100) * 2 + 50; 
   } else if (amount > 50) {
     points += amount - 50;
   }
-  return Math.floor(points); // handle fractions
+  return Math.floor(points); 
 };
 
 export const getCustomerWithRewards = (customer) => {

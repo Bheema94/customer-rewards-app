@@ -1,6 +1,6 @@
 import { generateMockCustomers } from "../MockData/mockDataGenerator";
 
-export const mockCustomerData = generateMockCustomers(10);
+import {mockCustomerData } from "../MockData/mockDataGenerator";
 
 export const fetchTransactions = () => {
   return new Promise((resolve, reject) => {
@@ -10,6 +10,7 @@ export const fetchTransactions = () => {
       if (shouldFail) {
         reject("Failed to fetch transactions.");
       } else {
+        console.log("mockCustomerData / ",mockCustomerData)
         resolve(mockCustomerData);
       }
     }, delay);

@@ -1,5 +1,5 @@
 import React from "react";
-import TransactionDetails from "../Components/TransactionSummary/TransactionDetails";
+import TransactionDetails from "../Components/TransactionSummary/transactionDetails";
 
 const MonthlyTransactionPage = () => {
   return <TransactionDetails />;
