@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import useFetch from "../../Hooks/useFetchHook";
@@ -7,7 +7,6 @@ import Table from "../Table/table";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import { Pagination, Spinner, FilterBar } from "../../Shared";
 import styles from "./transactionDetails.module.scss";
-import PropTypes from "prop-types";
 
 const TransactionDetails = () => {
   const { customerId } = useParams();
@@ -17,8 +16,8 @@ const TransactionDetails = () => {
   const monthFromQuery = searchParams.get("month");
   const yearFromQuery = searchParams.get("year");
 
-  const [selectedMonth, setSelectedMonth] = useState(monthFromQuery || "Jan");
-  const [selectedYear, setSelectedYear] = useState(yearFromQuery || "2025");
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -29,32 +28,58 @@ const TransactionDetails = () => {
     refetch,
   } = useFetch(() => fetchCustomer(customerId));
 
-  const allMonths = useMemo(() => {
+  const monthOptions = useMemo(() => {
     const all = customer?.transactions?.map((txn) =>
       dayjs(txn.date).format("MMM-YYYY")
     );
     const unique = [...new Set(all)];
-    return unique.reverse();
+    return unique.reverse().map((entry) => {
+      const [month, year] = entry.split("-");
+      return { value: month, label: entry };
+    });
   }, [customer]);
 
-  const allYears = useMemo(() => {
+  const yearOptions = useMemo(() => {
     const all = customer?.transactions?.map((txn) =>
       dayjs(txn.date).format("YYYY")
     );
-    return [...new Set(all)].sort((a, b) => b - a); 
+    return [...new Set(all)].sort((a, b) => b - a).map((y) => ({
+      value: y,
+      label: y,
+    }));
   }, [customer]);
 
+  
+  useEffect(() => {
+    if (!selectedMonth && monthOptions.length) {
+      const found = monthOptions.find((m) => m.value === monthFromQuery) || monthOptions[0];
+      setSelectedMonth(found);
+    }
+    if (!selectedYear && yearOptions.length) {
+      const found = yearOptions.find((y) => y.value === yearFromQuery) || yearOptions[0];
+      setSelectedYear(found);
+    }
+  }, [monthOptions, yearOptions, monthFromQuery, yearFromQuery, selectedMonth, selectedYear]);
+
+  const handleFilterChange = useCallback((monthObj, yearObj) => {
+    setSelectedMonth(monthObj);
+    setSelectedYear(yearObj);
+    setCurrentPage(1);
+    navigate(`/rewards/${customerId}/transactions?month=${monthObj.value}&year=${yearObj.value}`);
+  }, [navigate, customerId]);
+
   const filteredTransactions = useMemo(() => {
+    if (!customer || !selectedMonth || !selectedYear) return [];
     return (
-      customer?.transactions
-        ?.filter((txn) => {
+      customer.transactions
+        .filter((txn) => {
           const txnDate = dayjs(txn.date);
           return (
-            txnDate.format("MMM") === selectedMonth &&
-            txnDate.format("YYYY") === selectedYear
+            txnDate.format("MMM") === selectedMonth.value &&
+            txnDate.format("YYYY") === selectedYear.value
           );
         })
-        ?.map((txn) => ({
+        .map((txn) => ({
           ...txn,
           rewardPoints: calculateRewardPoints(txn.amount),
         })) || []
@@ -65,14 +90,7 @@ const TransactionDetails = () => {
     const indexOfLastRow = currentPage * rowsPerPage;
     const indexOfFirstRow = indexOfLastRow - rowsPerPage;
     return filteredTransactions.slice(indexOfFirstRow, indexOfLastRow);
-  }, [filteredTransactions, currentPage, rowsPerPage]);
-
-  const handleFilterChange = useCallback((month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setCurrentPage(1);
-    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
-  }, [navigate, customerId]);
+  }, [filteredTransactions, currentPage]);
 
   const transactionColumns = [
     { header: "Transaction Date", accessor: "date" },
@@ -83,15 +101,15 @@ const TransactionDetails = () => {
   return (
     <div className={styles.wrapper}>
       <FilterBar
-        availableMonths={allMonths}
+        monthOptions={monthOptions}
+        yearOptions={yearOptions}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         onFilterChange={handleFilterChange}
-        availableYears={allYears}
       />
 
       <h2>
-        Transaction Details for {selectedMonth} {selectedYear}
+        Transaction Details for {selectedMonth?.label} {selectedYear?.label}
       </h2>
 
       {loading ? (
@@ -121,21 +139,6 @@ const TransactionDetails = () => {
       )}
     </div>
   );
-};
-
-TransactionDetails.propTypes = {
-  customerId: PropTypes.string,
-  defaultMonth: PropTypes.string,
-  defaultYear: PropTypes.string,
-  initialCustomerData: PropTypes.shape({
-    name: PropTypes.string,
-    transactions: PropTypes.arrayOf(
-      PropTypes.shape({
-        date: PropTypes.string.isRequired,
-        amount: PropTypes.number.isRequired,
-      })
-    ),
-  }),
 };
 
 export default TransactionDetails;

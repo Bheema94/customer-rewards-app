@@ -8,26 +8,34 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Pagination, Spinner, FilterBar } from "../../Shared";
 import styles from "./monthlySummary.module.scss";
 import PropTypes from "prop-types";
+import {
+  getRecent3MonthsKeys,
+  sortMonthKeysDesc,
+} from "../../Utlis/dateHelpers";
 
 const MonthlySummary = () => {
   const { customerId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
   const monthFromQuery = searchParams.get("month");
   const yearFromQuery = searchParams.get("year");
 
-  const {
-    data: customer,
-    loading,
-    error
-  } = useFetch(() => fetchCustomer(customerId));
+  const { data: customer, loading, error } = useFetch(() =>
+    fetchCustomer(customerId)
+  );
+
+  const monthlyRewardsColumns = [
+    { header: "Month", accessor: "month" },
+    { header: "Total Points", accessor: "totalPoints" },
+  ];
+
+  const [filteredMonthlyRewards, setFilteredMonthlyRewards] = useState([]);
 
   const customerUpdateData = useMemo(() => {
     const rewardsByMonthMap = {};
     customer?.transactions?.forEach((txn) => {
       const monthKey = dayjs(txn.date).format("MMM-YYYY");
-      const points = calculateRewardPoints(txn.amount);
+      const pts = calculateRewardPoints(txn.amount);
       if (!rewardsByMonthMap[monthKey]) {
         rewardsByMonthMap[monthKey] = {
           month: monthKey,
@@ -35,93 +43,136 @@ const MonthlySummary = () => {
           transactions: [],
         };
       }
-      rewardsByMonthMap[monthKey].totalPoints += points;
+      rewardsByMonthMap[monthKey].totalPoints += pts;
       rewardsByMonthMap[monthKey].transactions.push({
         ...txn,
-        rewardPoints: points,
+        rewardPoints: pts,
       });
     });
-    const monthlyRewards = Object.values(rewardsByMonthMap);
     return {
       ...customer,
-      monthlyRewards,
+      monthlyRewards: Object.values(rewardsByMonthMap),
     };
   }, [customer]);
 
-  const allMonths = useMemo(() => {
-    return (customerUpdateData?.monthlyRewards?.map((item) => item.month)).reverse();
-  }, [customerUpdateData]);
+  const allMonthKeys = useMemo(
+    () =>
+      sortMonthKeysDesc(
+        customerUpdateData?.monthlyRewards.map((m) => m.month) || []
+      ),
+    [customerUpdateData]
+  );
 
-  const allYears = useMemo(() => {
-    return customerUpdateData?.monthlyRewards?.reduce((accumulator, item) => {
-      const year = item.month.split("-")[1];
-      if (!accumulator.includes(year)) {
-        accumulator.push(year);
-      }
-      return accumulator;
-    }, []).reverse();
-  }, [customerUpdateData]);
+  const monthOptions = useMemo(() => {
+    return [
+      { value: "recent3", label: "Recent 3 Months" },
+      ...allMonthKeys.map((key) => ({ value: key, label: key })),
+    ];
+  }, [allMonthKeys]);
 
-  const defaultMonth = allMonths?.[0];
-  const [selectedMonth, setSelectedMonth] = useState(monthFromQuery || defaultMonth);
-  const [selectedYear, setSelectedYear] = useState(yearFromQuery || "2025");
+  const yearOptions = useMemo(() => {
+    const years = allMonthKeys.map((key) => key.split("-")[1]);
+    return Array.from(new Set(years))
+      .sort((a, b) => Number(b) - Number(a))
+      .map((year) => ({ value: year, label: year }));
+  }, [allMonthKeys]);
+
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    monthOptions.find((opt) => opt.value === monthFromQuery) || monthOptions[0]
+  );
+  const [selectedYear, setSelectedYear] = useState(() =>
+    yearOptions.find((opt) => opt.value === yearFromQuery) || yearOptions[0]
+  );
 
   useEffect(() => {
-    if (allMonths?.length && !monthFromQuery) {
-      setSelectedMonth(allMonths[0]);
+    if (!monthFromQuery && monthOptions[0]) {
+      setSelectedMonth(monthOptions[0]);
     }
-  }, [allMonths, monthFromQuery]);
+    if (!yearFromQuery && yearOptions[0]) {
+      setSelectedYear(yearOptions[0]);
+    }
+  }, [monthFromQuery, yearFromQuery, monthOptions, yearOptions]);
+
+  useEffect(() => {
+    if (!customer || !selectedMonth?.value || !selectedYear?.value) return;
+
+    let txns = customer.transactions.filter(
+      (t) => dayjs(t.date).year().toString() === selectedYear.value
+    );
+
+    if (selectedMonth.value === "recent3") {
+      const recentKeys = getRecent3MonthsKeys();
+      txns = txns.filter((t) =>
+        recentKeys.includes(dayjs(t.date).format("MMM-YYYY"))
+      );
+    } else {
+      txns = txns.filter(
+        (t) => dayjs(t.date).format("MMM-YYYY") === selectedMonth.value
+      );
+    }
+
+    const map = {};
+    txns.forEach((t) => {
+      const key = dayjs(t.date).format("MMM-YYYY");
+      const pts = calculateRewardPoints(t.amount);
+      if (!map[key]) map[key] = { month: key, totalPoints: 0, transactions: [] };
+      map[key].totalPoints += pts;
+      map[key].transactions.push({ ...t, rewardPoints: pts });
+    });
+
+    const newMonthly = Object.values(map).sort((a, b) =>
+      dayjs(b.month, "MMM-YYYY").diff(dayjs(a.month, "MMM-YYYY"))
+    );
+    setFilteredMonthlyRewards(newMonthly);
+  }, [customer, selectedMonth, selectedYear]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
 
-  const currentRows = useMemo(() => {
-    return (
-      customerUpdateData?.monthlyRewards?.slice(
-        indexOfFirstRow,
-        indexOfLastRow
-      ) || []
-    );
-  }, [customerUpdateData, indexOfFirstRow, indexOfLastRow]);
+  const currentRows = filteredMonthlyRewards.slice(
+    indexOfFirstRow,
+    indexOfLastRow
+  );
 
-  const handleFilterChange = useCallback((month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
-  }, [navigate, customerId]);
+  const handleFilterChange = useCallback(
+    (month, year) => {
+      setSelectedMonth(month);
+      setSelectedYear(year);
+      setCurrentPage(1);
+    },
+    []
+  );
 
-  const handleRowClick = useCallback((row) => {
-    const [month, year] = row.month.split("-");
-    navigate(`/rewards/${customerId}/transactions?month=${month}&year=${year}`);
-  }, [navigate, customerId]);
-
-  const monthlyRewardsColumns = [
-    { header: "Month", accessor: "month" },
-    { header: "Total Points", accessor: "totalPoints" },
-  ];
+  const handleRowClick = useCallback(
+    (row) => {
+      const [m, y] = row.month.split("-");
+      navigate(`/rewards/${customerId}/transactions?month=${m}&year=${y}`);
+    },
+    [navigate, customerId]
+  );
 
   return (
     <div className={styles.wrapper}>
       <FilterBar
-        availableMonths={allMonths}
-        availableYears={allYears}
+        monthOptions={monthOptions}
+        yearOptions={yearOptions}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         onFilterChange={handleFilterChange}
       />
 
-      <h2>
-        Monthly Summary Reward Points
-      </h2>
+      <h2>Monthly Summary Reward Points</h2>
 
       {loading ? (
         <Spinner />
       ) : error ? (
         <div className={styles.error}>Error loading customer data.</div>
-      ) : !customerUpdateData?.monthlyRewards?.length ? (
-        <div className={styles.noData}>No monthly reward data available.</div>
+      ) : !filteredMonthlyRewards.length ? (
+        <div className={styles.noData}>
+          No transactions found for the selected filter.
+        </div>
       ) : (
         <>
           <Table
@@ -130,7 +181,7 @@ const MonthlySummary = () => {
             onRowClick={handleRowClick}
           />
           <Pagination
-            totalItems={customerUpdateData?.monthlyRewards?.length || 0}
+            totalItems={filteredMonthlyRewards.length}
             itemsPerPage={rowsPerPage}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
@@ -143,17 +194,6 @@ const MonthlySummary = () => {
 
 MonthlySummary.propTypes = {
   customerId: PropTypes.string,
-  defaultMonth: PropTypes.string,
-  defaultYear: PropTypes.string,
-  initialCustomerData: PropTypes.shape({
-    name: PropTypes.string,
-    transactions: PropTypes.arrayOf(
-      PropTypes.shape({
-        amount: PropTypes.number.isRequired,
-        date: PropTypes.string.isRequired,
-      })
-    ),
-  }),
 };
 
 export default MonthlySummary;
