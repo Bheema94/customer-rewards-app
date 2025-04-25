@@ -10,7 +10,7 @@ import styles from "./customersList.module.scss";
 
 const CustomersList = () => {
   const navigate = useNavigate();
-
+ 
   const {
     data,
     loading: loadingSpinner,
@@ -29,7 +29,7 @@ const CustomersList = () => {
       };
     });
   }, [data]);
-
+  
   const customerColumns = [
     { header: "First Name", accessor: "firstName" },
     { header: "Last Name", accessor: "lastName" },

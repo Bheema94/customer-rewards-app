@@ -1,36 +1,57 @@
-import { generateMockCustomers } from "../MockData/mockDataGenerator";
+import { mockCustomerData } from "../MockData/mockDataGenerator";
+import logger from "../Loggers/loggers";
 
-import {mockCustomerData } from "../MockData/mockDataGenerator";
-
+// Simulates fetching all transactions
 export const fetchTransactions = () => {
+  const delay = 1000 + Math.random() * 500;
+  const shouldFail = Math.random() < 0.1;
+
+  logger.info("Calling fetchTransactions API");
+
   return new Promise((resolve, reject) => {
-    const delay = 1000 + Math.random() * 500;
-    const shouldFail = Math.random() < 0.1;
     setTimeout(() => {
       if (shouldFail) {
-        reject("Failed to fetch transactions.");
+        const errorMsg = "Failed to fetch transactions.";
+        logger.error("fetchTransactions failed", { error: errorMsg });
+        reject(errorMsg);
       } else {
-        console.log("mockCustomerData / ",mockCustomerData)
+        logger.info("fetchTransactions success", {
+          transactionCount: mockCustomerData.length,
+        });
         resolve(mockCustomerData);
       }
     }, delay);
   });
 };
 
+// Simulates fetching a customer by ID
 export const fetchCustomer = (customerId) => {
-  return new Promise((resolve, reject) => {
-    const delay = 1000 + Math.random() * 500;
-    const shouldFail = Math.random() < 0.1;
+  const delay = 1000 + Math.random() * 500;
+  const shouldFail = Math.random() < 0.1;
 
+  logger.info("Calling fetchCustomer API", { customerId });
+
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) {
-        reject("Failed to fetch transactions.");
+        const errorMsg = "Failed to fetch transactions.";
+        logger.error("fetchCustomer failed", { customerId, error: errorMsg });
+        reject(errorMsg);
       } else {
-        resolve(
-          mockCustomerData?.find(
-            (customer) => customer.customerId === customerId
-          )
+        const customer = mockCustomerData?.find(
+          (customer) => customer.customerId === customerId
         );
+
+        if (customer) {
+          logger.info("fetchCustomer success", {
+            customerId,
+            transactionCount: customer.transactions?.length,
+          });
+        } else {
+          logger.warn("fetchCustomer found no matching customer", { customerId });
+        }
+
+        resolve(customer);
       }
     }, delay);
   });
