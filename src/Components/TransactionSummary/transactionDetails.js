@@ -49,7 +49,6 @@ const TransactionDetails = () => {
     }));
   }, [customer]);
 
-  
   useEffect(() => {
     if (!selectedMonth && monthOptions.length) {
       const found = monthOptions.find((m) => m.value === monthFromQuery) || monthOptions[0];
@@ -98,6 +97,10 @@ const TransactionDetails = () => {
     { header: "Reward Points", accessor: "rewardPoints" },
   ];
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className={styles.wrapper}>
       <FilterBar
@@ -127,13 +130,15 @@ const TransactionDetails = () => {
             columns={transactionColumns}
             loadingSpinner={loading}
             error={error}
-            getData={refetch}
+            getData={() => {
+              refetch();
+            }}
           />
           <Pagination
             totalItems={filteredTransactions.length}
             itemsPerPage={rowsPerPage}
             currentPage={currentPage}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </>
       )}
