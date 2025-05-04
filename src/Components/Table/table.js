@@ -6,6 +6,7 @@ const Table = ({
   data = [],
   columns = [],
   onRowClick = () => null,
+  getRowTestId = () => undefined, // Optional test ID generator
 }) => {
   return (
     <div className={styles?.tableContainer}>
@@ -13,18 +14,22 @@ const Table = ({
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.accessor}>{col.header}</th>
+              <th key={col?.accessor}>{col?.header}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr key={rowIndex} onClick={() => onRowClick(row)}>
+            <tr
+              key={rowIndex}
+              onClick={() => onRowClick(row)}
+              data-testid={getRowTestId?.(row, rowIndex)}
+            >
               {columns.map((col) => (
-                <td key={col.accessor}>
-                  {col.Cell
-                    ? col.Cell(row[col.accessor], row)
-                    : row[col.accessor]}
+                <td key={col?.accessor}>
+                  {col?.Cell
+                    ? col?.Cell(row[col?.accessor], row)
+                    : row[col?.accessor]}
                 </td>
               ))}
             </tr>
@@ -43,7 +48,8 @@ Table.propTypes = {
       accessor: PropTypes.string.isRequired,
     })
   ).isRequired,
-  onRowClick: PropTypes.func
+  onRowClick: PropTypes.func,
+  getRowTestId: PropTypes.func,
 };
 
 export default Table;

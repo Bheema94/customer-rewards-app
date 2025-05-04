@@ -3,70 +3,71 @@ import PropTypes from "prop-types";
 import styles from "./filterBar.module.scss";
 
 const FilterBar = ({
-  monthOptions = [],
-  yearOptions = [],
+  monthOptions,
+  yearOptions,
   selectedMonth,
   selectedYear,
   onFilterChange,
 }) => {
-  const handleMonthChange = (e) => {
-    const selected = monthOptions.find((m) => m.value === e.target.value);
-    onFilterChange(selected, selectedYear);
-  };
-
   const handleYearChange = (e) => {
     const selected = yearOptions.find((y) => y.value === e.target.value);
-    onFilterChange(selectedMonth, selected);
+    onFilterChange(null, selected, true); // Year change resets month
+  };
+
+  const handleMonthChange = (e) => {
+    const selected = monthOptions.find((m) => m.value === e.target.value);
+    onFilterChange(selected, selectedYear, false);
   };
 
   return (
     <div className={styles.filterBar}>
-      <label>
-        Month:
-        <select value={selectedMonth?.value || ""} onChange={handleMonthChange}>
-          {monthOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+      <div className={styles.filterGroup}>
+        <label htmlFor="year-select">Select Year</label>
+        <select
+          id="year-select"
+          className={styles.select}
+          value={selectedYear?.value || ""}
+          onChange={handleYearChange}
+        >
+          <option value="" disabled>
+            -- Select Year --
+          </option>
+          {yearOptions.map((y) => (
+            <option key={y.value} value={y.value}>
+              {y.label}
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label>
-        Year:
-        <select value={selectedYear?.value || ""} onChange={handleYearChange}>
-          {yearOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+      <div className={styles.filterGroup}>
+        <label htmlFor="month-select">Select Month</label>
+        <select
+          id="month-select"
+          className={styles.select}
+          value={selectedMonth?.value || ""}
+          onChange={handleMonthChange}
+          disabled={!selectedYear}
+        >
+          <option value="" disabled>
+            -- Select Month --
+          </option>
+          {monthOptions.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
             </option>
           ))}
         </select>
-      </label>
+      </div>
     </div>
   );
 };
 
 FilterBar.propTypes = {
-  monthOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  yearOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  selectedMonth: PropTypes.shape({
-    value: PropTypes.string,
-    label: PropTypes.string,
-  }),
-  selectedYear: PropTypes.shape({
-    value: PropTypes.string,
-    label: PropTypes.string,
-  }),
+  monthOptions: PropTypes.array.isRequired,
+  yearOptions: PropTypes.array.isRequired,
+  selectedMonth: PropTypes.object,
+  selectedYear: PropTypes.object,
   onFilterChange: PropTypes.func.isRequired,
 };
 

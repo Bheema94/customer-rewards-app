@@ -17,17 +17,12 @@ const MonthlySummary = () => {
   const { customerId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const monthFromQuery = searchParams.get("month");
-  const yearFromQuery = searchParams.get("year");
 
-  const { data: customer, loading, error } = useFetch(() =>
-    fetchCustomer(customerId)
-  );
-
-  const monthlyRewardsColumns = [
-    { header: "Month", accessor: "month" },
-    { header: "Total Points", accessor: "totalPoints" },
-  ];
+  const {
+    data: customer,
+    loading,
+    error,
+  } = useFetch(() => fetchCustomer(customerId));
 
   const [filteredMonthlyRewards, setFilteredMonthlyRewards] = useState([]);
 
@@ -63,13 +58,6 @@ const MonthlySummary = () => {
     [customerUpdateData]
   );
 
-  const monthOptions = useMemo(() => {
-    return [
-      { value: "recent3", label: "Recent 3 Months" },
-      ...allMonthKeys.map((key) => ({ value: key, label: key })),
-    ];
-  }, [allMonthKeys]);
-
   const yearOptions = useMemo(() => {
     const years = allMonthKeys.map((key) => key.split("-")[1]);
     return Array.from(new Set(years))
@@ -77,45 +65,66 @@ const MonthlySummary = () => {
       .map((year) => ({ value: year, label: year }));
   }, [allMonthKeys]);
 
-  const [selectedMonth, setSelectedMonth] = useState(() =>
-    monthOptions.find((opt) => opt.value === monthFromQuery) || monthOptions[0]
-  );
-  const [selectedYear, setSelectedYear] = useState(() =>
-    yearOptions.find((opt) => opt.value === yearFromQuery) || yearOptions[0]
-  );
+  const latestYear = yearOptions[0]?.value;
 
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [monthOptions, setMonthOptions] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initial year & month setup
   useEffect(() => {
-    if (!monthFromQuery && monthOptions[0]) {
-      setSelectedMonth(monthOptions[0]);
-    }
-    if (!yearFromQuery && yearOptions[0]) {
-      setSelectedYear(yearOptions[0]);
-    }
-  }, [monthFromQuery, yearFromQuery, monthOptions, yearOptions]);
+    if (!initialized && yearOptions.length > 0) {
+      const defaultYear = yearOptions[0];
+      const monthsForYear = allMonthKeys.filter(
+        (key) => key.split("-")[1] === defaultYear.value
+      );
+      const recentMonths = monthsForYear.slice(0, 3);
 
+      setSelectedYear(defaultYear);
+      setMonthOptions([...recentMonths.map((m) => ({ value: m, label: m }))]);
+      setSelectedMonth({ value: recentMonths[0], label: recentMonths[0] });
+      setInitialized(true);
+    }
+  }, [yearOptions, allMonthKeys, initialized]);
+
+  const handleFilterChange = useCallback(
+    (month, year) => {
+      if (year && year.value !== selectedYear?.value) {
+        // Year changed
+        setSelectedYear(year);
+        const months = allMonthKeys.filter(
+          (key) => key.split("-")[1] === year.value
+        );
+        const options = [...months.map((m) => ({ value: m, label: m }))];
+        setMonthOptions(options);
+        setSelectedMonth(null); // Clear selection for new year
+      }
+
+      if (month && month.value !== selectedMonth?.value) {
+        // Month changed
+        setSelectedMonth(month);
+      }
+
+      setCurrentPage(1);
+    },
+    [allMonthKeys, selectedYear, selectedMonth]
+  );
+
+  // Filter transactions
   useEffect(() => {
     if (!customer || !selectedMonth?.value || !selectedYear?.value) return;
 
-    let txns = customer.transactions.filter(
-      (t) => dayjs(t.date).year().toString() === selectedYear.value
+    const txns = customer.transactions.filter(
+      (t) => dayjs(t.date).format("MMM-YYYY") === selectedMonth.value
     );
-
-    if (selectedMonth.value === "recent3") {
-      const recentKeys = getRecent3MonthsKeys();
-      txns = txns.filter((t) =>
-        recentKeys.includes(dayjs(t.date).format("MMM-YYYY"))
-      );
-    } else {
-      txns = txns.filter(
-        (t) => dayjs(t.date).format("MMM-YYYY") === selectedMonth.value
-      );
-    }
 
     const map = {};
     txns.forEach((t) => {
       const key = dayjs(t.date).format("MMM-YYYY");
       const pts = calculateRewardPoints(t.amount);
-      if (!map[key]) map[key] = { month: key, totalPoints: 0, transactions: [] };
+      if (!map[key])
+        map[key] = { month: key, totalPoints: 0, transactions: [] };
       map[key].totalPoints += pts;
       map[key].transactions.push({ ...t, rewardPoints: pts });
     });
@@ -134,15 +143,6 @@ const MonthlySummary = () => {
   const currentRows = filteredMonthlyRewards.slice(
     indexOfFirstRow,
     indexOfLastRow
-  );
-
-  const handleFilterChange = useCallback(
-    (month, year) => {
-      setSelectedMonth(month);
-      setSelectedYear(year);
-      setCurrentPage(1);
-    },
-    []
   );
 
   const handleRowClick = useCallback(
@@ -166,19 +166,30 @@ const MonthlySummary = () => {
       <h2>Monthly Summary Reward Points</h2>
 
       {loading ? (
-        <Spinner />
+        <div className="spinnerWrapper" role="status">
+          <div className="loader" />
+          <Spinner />
+        </div>
       ) : error ? (
         <div className={styles.error}>Error loading customer data.</div>
       ) : !filteredMonthlyRewards.length ? (
         <div className={styles.noData}>
           No transactions found for the selected filter.
         </div>
+      ) : selectedYear && !selectedMonth?.value ? (
+        <div className={styles.noData}>
+          Select a month to check reward points.
+        </div>
       ) : (
         <>
           <Table
             data={currentRows}
-            columns={monthlyRewardsColumns}
+            columns={[
+              { header: "Month", accessor: "month" },
+              { header: "Total Points", accessor: "totalPoints" },
+            ]}
             onRowClick={handleRowClick}
+            getRowTestId={(row) => `summary-row-${row.month}-${row.year}`}
           />
           <Pagination
             totalItems={filteredMonthlyRewards.length}

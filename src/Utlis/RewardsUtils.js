@@ -2,12 +2,13 @@ import dayjs from "dayjs";
 
 export const calculateRewardPoints = (amount) => {
   let points = 0;
-  if (amount > 100) {
-    points += (amount - 100) * 2 + 50; 
-  } else if (amount > 50) {
-    points += amount - 50;
+  const wholeAmount = Math.floor(amount);
+  if (wholeAmount > 100) {
+    points += (wholeAmount - 100) * 2 + 50;
+  } else if (wholeAmount > 50) {
+    points += wholeAmount - 50;
   }
-  return Math.floor(points); 
+  return points;
 };
 
 export const getCustomerWithRewards = (customer) => {

@@ -28,44 +28,74 @@ const TransactionDetails = () => {
     refetch,
   } = useFetch(() => fetchCustomer(customerId));
 
-  const monthOptions = useMemo(() => {
-    const all = customer?.transactions?.map((txn) =>
-      dayjs(txn.date).format("MMM-YYYY")
-    );
-    const unique = [...new Set(all)];
-    return unique.reverse().map((entry) => {
-      const [month, year] = entry.split("-");
-      return { value: month, label: entry };
-    });
-  }, [customer]);
-
   const yearOptions = useMemo(() => {
     const all = customer?.transactions?.map((txn) =>
       dayjs(txn.date).format("YYYY")
     );
-    return [...new Set(all)].sort((a, b) => b - a).map((y) => ({
-      value: y,
-      label: y,
-    }));
+    return [...new Set(all)]
+      .sort((a, b) => b - a)
+      .map((y) => ({
+        value: y,
+        label: y,
+      }));
   }, [customer]);
 
-  useEffect(() => {
-    if (!selectedMonth && monthOptions.length) {
-      const found = monthOptions.find((m) => m.value === monthFromQuery) || monthOptions[0];
-      setSelectedMonth(found);
-    }
-    if (!selectedYear && yearOptions.length) {
-      const found = yearOptions.find((y) => y.value === yearFromQuery) || yearOptions[0];
-      setSelectedYear(found);
-    }
-  }, [monthOptions, yearOptions, monthFromQuery, yearFromQuery, selectedMonth, selectedYear]);
+  const monthOptions = useMemo(() => {
+    if (!customer || !selectedYear) return [];
+    const monthsForYear = customer.transactions
+      .filter((txn) => dayjs(txn.date).format("YYYY") === selectedYear.value)
+      .map((txn) => {
+        const formatted = dayjs(txn.date).format("MMM-YYYY");
+        const [month] = formatted.split("-");
+        return { value: month, label: formatted };
+      });
 
-  const handleFilterChange = useCallback((monthObj, yearObj) => {
-    setSelectedMonth(monthObj);
-    setSelectedYear(yearObj);
-    setCurrentPage(1);
-    navigate(`/rewards/${customerId}/transactions?month=${monthObj.value}&year=${yearObj.value}`);
-  }, [navigate, customerId]);
+    const unique = [
+      ...new Map(monthsForYear.map((m) => [m.label, m])).values(),
+    ];
+    return unique.sort((a, b) =>
+      dayjs(b.label, "MMM-YYYY").diff(dayjs(a.label, "MMM-YYYY"))
+    );
+  }, [customer, selectedYear]);
+
+  useEffect(() => {
+    if (customer && yearOptions.length && !selectedYear) {
+      const defaultYear =
+        yearOptions.find((y) => y.value === yearFromQuery) || yearOptions[0];
+      setSelectedYear(defaultYear);
+    }
+  }, [customer, yearOptions, selectedYear, yearFromQuery]);
+
+  useEffect(() => {
+    if (
+      monthOptions.length &&
+      !selectedMonth &&
+      monthFromQuery &&
+      selectedYear
+    ) {
+      const defaultMonth = monthOptions.find((m) => m.value === monthFromQuery);
+      setSelectedMonth(defaultMonth || null);
+    }
+  }, [monthOptions, selectedMonth, monthFromQuery, selectedYear]);
+
+  const handleFilterChange = useCallback(
+    (monthObj, yearObj, fromYearChange = false) => {
+      setSelectedYear(yearObj);
+
+      if (fromYearChange) {
+        setSelectedMonth(null); // Reset month
+        setCurrentPage(1);
+        navigate(`/rewards/${customerId}/transactions?year=${yearObj.value}`);
+      } else {
+        setSelectedMonth(monthObj);
+        setCurrentPage(1);
+        navigate(
+          `/rewards/${customerId}/transactions?month=${monthObj.value}&year=${yearObj.value}`
+        );
+      }
+    },
+    [navigate, customerId]
+  );
 
   const filteredTransactions = useMemo(() => {
     if (!customer || !selectedMonth || !selectedYear) return [];
@@ -112,10 +142,17 @@ const TransactionDetails = () => {
       />
 
       <h2>
-        Transaction Details for {selectedMonth?.label} {selectedYear?.label}
+        Transaction Details{" "}
+        {selectedMonth?.label && selectedYear?.label
+          ? `for ${selectedMonth.label}`
+          : ""}
       </h2>
 
-      {loading ? (
+      {selectedYear && !selectedMonth ? (
+        <div className={styles.noData}>
+          Select Month to check reward points.
+        </div>
+      ) : loading ? (
         <Spinner />
       ) : error ? (
         <div className={styles.error}>Error loading customer data</div>

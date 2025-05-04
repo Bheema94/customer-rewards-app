@@ -12,8 +12,14 @@
 }
 
 .noData {
-  color: #888;
   text-align: center;
+  color: #666;
+  background-color: #fff3cd;
   padding: 1rem;
-  font-style: italic;
+  border-radius: 8px;
+  border: 1px solid #ffeeba;
+  font-size: 1rem;
+  margin: 1.5rem auto;
+  max-width: 600px;
 }
+

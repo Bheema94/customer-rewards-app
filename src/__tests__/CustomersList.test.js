@@ -1,17 +1,18 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import CustomersList from "../Components/Customers/customersList";
 import { BrowserRouter } from "react-router-dom";
 import * as useFetchHook from "../Hooks/useFetchHook";
+import userEvent from "@testing-library/user-event";
 
-// ✅ Mock the useFetchHook directly
+// ✅ Mock the useFetchHook
 jest.mock("../Hooks/useFetchHook");
 
-import { useNavigate } from "react-router-dom";
-
-// ✅ Mocking the useNavigate hook
+// ✅ Partially mock react-router-dom to preserve other exports like BrowserRouter
+const mockNavigate = jest.fn();
 jest.mock("react-router-dom", () => ({
-  useNavigate: jest.fn(),
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockNavigate,
 }));
 
 // ✅ Sample mock data
@@ -26,16 +27,11 @@ const mockCustomers = [
 ];
 
 describe("CustomersList Component", () => {
-  let mockNavigate;
-
   beforeEach(() => {
-    mockNavigate = jest.fn(); // Mock the navigate function
-    useNavigate.mockReturnValue(mockNavigate); // Mock return value of useNavigate
     jest.clearAllMocks();
   });
 
   it("should render customers with total reward points", async () => {
-    // Mock success response from useFetch
     useFetchHook.default.mockReturnValue({
       data: mockCustomers,
       loading: false,
@@ -58,7 +54,6 @@ describe("CustomersList Component", () => {
   });
 
   it("should show error on fetch failure", async () => {
-    // Mock error response from useFetch
     useFetchHook.default.mockReturnValue({
       data: null,
       loading: false,
@@ -72,14 +67,11 @@ describe("CustomersList Component", () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Failed to load customers/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load customers/i)).toBeInTheDocument();
     });
   });
 
   it("should show loading indicator", () => {
-    // Mock loading state from useFetch
     useFetchHook.default.mockReturnValue({
       data: null,
       loading: true,
@@ -96,7 +88,6 @@ describe("CustomersList Component", () => {
   });
 
   it("should navigate to the rewards page on row click", async () => {
-    // Mock success response from useFetch
     useFetchHook.default.mockReturnValue({
       data: mockCustomers,
       loading: false,
@@ -109,11 +100,12 @@ describe("CustomersList Component", () => {
       </BrowserRouter>
     );
 
-    // Simulate row click (assuming row click triggers navigate)
-    const customerRow = screen.getByText("John"); // Adjust according to row content
-    customerRow.click();
+    // 🔍 Adjust this to target a specific element or use test-id if available
+    const customerRow = await screen.findByText("John");
+    await userEvent.click(customerRow);
 
-    // Check if navigate was called with the correct URL
-    expect(mockNavigate).toHaveBeenCalledWith("/rewards/1");
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/rewards/1");
+    });
   });
 });
