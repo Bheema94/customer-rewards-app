@@ -1,6 +1,14 @@
 # customer-rewards-app
 Created with CodeSandbox
 
+Prerequisites
+
+Ensure the following tools are installed on your local machine before running the project:
+
+Node.js (v20.12.0 ) – Download
+
+npm (v10.5.0 ) or Yarn – comes with Node.js (npm -v to check version)
+
 How to run the code ? 
 From the root folder of the project, run the following commands:
 npm install
@@ -14,18 +22,32 @@ How to use the app
 
 ![image](https://github.com/user-attachments/assets/7cc31e98-2d1c-40e9-941c-1adba023031d)
 
-2. Click on a customer to view their monthly rewards summary, including a detailed breakdown of rewards earned over the most recent three months.
+2. Click on a customer navigate to their monthly rewards summary, including a detailed breakdown of rewards earned over the month.
+
+The component fetches customer data using the customer ID from the URL, automatically selects the most recent available year, and filters to display reward points for the most recent month within that year.
  
  Monthly Summary Rewards Summary
  
-![image](https://github.com/user-attachments/assets/90d9bb4d-eaf5-41ce-ba3f-341bde628d23)
+![image](https://github.com/user-attachments/assets/32e7482b-caac-4b98-b45f-de86f91e95e3)
 
-You can use the month filter to select a specific month and view the rewards earned during that period.
 
-![image](https://github.com/user-attachments/assets/d9c948ce-c90f-4919-af86-47737db527fa)
+Use the year and month filters to select a specific time period and instantly view the rewards earned during that month.
 
-3. When a user clicks on a specific month in the table, they are navigated to the monthly transaction details page, where they can view all transactions for that month, including the amount, reward points, and paginated results.
+![image](https://github.com/user-attachments/assets/5f403c48-a09f-4c5a-8ab8-a4e0a9b67aef)
 
- ![image](https://github.com/user-attachments/assets/1a043502-b5fa-4292-9ff5-aadb4a86c8c9)
+When a Year is Selected the month dropdown updates dynamically to show only months that belong to the selected year.the month selection is cleared, and the user is prompted to select a month.
+
+![image](https://github.com/user-attachments/assets/5d2cdfa6-a6e1-4404-b675-3ebe544d9055)
+
+
+
+3. Clicking on a specific month in the summary table navigates the user to the transaction details page, where all transactions for that month are displayed along with their amounts, reward points, and paginated results.
+
+![image](https://github.com/user-attachments/assets/3b05a86d-9d9d-4113-bea4-d688f61a9023)
+
+Testcase success
+![image](https://github.com/user-attachments/assets/92e7d697-6e82-42d2-95cb-2bf5eee5bacb)
+
+
 
 
