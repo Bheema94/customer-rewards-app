@@ -7,10 +7,12 @@
   "dependencies": {
     "@popperjs/core": "2.11.8",
     "base-64": "^1.0.0",
+    "bootstrap": "^5.3.6",
     "dayjs": "1.11.13",
     "pino": "^9.6.0",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.0.0",
     "react-router-dom": "6.30.0",
     "react-scripts": "^5.0.0",

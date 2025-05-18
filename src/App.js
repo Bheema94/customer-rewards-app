@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import "./styles.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Spinner } from "./Shared/index.js";
 
 const CustomersPage = lazy(() => import("./pages/customersPage"));
 const MonthlyRewardsSummaryPage = lazy(() =>
@@ -14,7 +15,13 @@ const TransactionSummaryPage = lazy(() =>
 export default function App() {
   return (
     <Router>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense
+        fallback={
+          <div>
+            <Spinner />
+          </div>
+        }
+      >
         <Routes>
           <Route path="/" element={<CustomersPage />} />
           <Route

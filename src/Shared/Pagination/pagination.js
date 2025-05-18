@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import Button from "../Button/button";
 
 const Pagination = ({
   totalItems,
@@ -13,36 +14,32 @@ const Pagination = ({
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="flex justify-center mt-4 space-x-2">
-      <button
-        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+    <div className="flex justify-center mt-4 space-x-2 flex-wrap">
+      <Button
+        label="Prev"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        variant="secondary"
+        size="sm"
         disabled={currentPage === 1}
-      >
-        Prev
-      </button>
+      />
 
       {pages.map((page) => (
-        <button
+        <Button
           key={page}
-          className={`px-3 py-1 rounded ${
-            page === currentPage
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200 hover:bg-gray-300"
-          }`}
+          label={page.toString()}
           onClick={() => onPageChange(page)}
-        >
-          {page}
-        </button>
+          variant={page === currentPage ? "primary" : "light"}
+          size="sm"
+        />
       ))}
 
-      <button
-        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+      <Button
+        label="Next"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        variant="secondary"
+        size="sm"
         disabled={currentPage === totalPages}
-      >
-        Next
-      </button>
+      />
     </div>
   );
 };

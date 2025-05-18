@@ -1,23 +1,21 @@
 import React, { useMemo } from "react";
 import PropTypes from "prop-types";
 import Table from "../Table/table";
-import { fetchTransactions } from "../../Services/api";
+import { fetchCustomers } from "../../Services/api";
 import useFetch from "../../Hooks/useFetchHook";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "../../Shared";
 import styles from "./customersList.module.scss";
+import { CUSTOMER_SUMMARY, CUSTOMER_SUMMARY_TABLE_COLUMNS } from "./constants";
 
 const CustomersList = () => {
   const navigate = useNavigate();
- 
-  const {
-    data,
-    loading: loadingSpinner,
-    error,
-  } = useFetch(fetchTransactions, []);
+
+  const { data, loading: loadingSpinner, error } = useFetch(fetchCustomers);
 
   const customers = useMemo(() => {
+    if (!data) return [];
     return data?.map((customer) => {
       const totalRewardPoints = customer?.transactions?.reduce((acc, txn) => {
         return acc + calculateRewardPoints(txn.amount);
@@ -29,35 +27,25 @@ const CustomersList = () => {
       };
     });
   }, [data]);
-  
-  const customerColumns = [
-    { header: "First Name", accessor: "firstName" },
-    { header: "Last Name", accessor: "lastName" },
-    { header: "Email", accessor: "email" },
-    { header: "Total Reward Points", accessor: "totalRewardPoints" },
-  ];
 
   return (
     <div className={styles.wrapper}>
-      <h2>Customer Rewards Summary</h2>
+      <h2>{CUSTOMER_SUMMARY.TITLE}</h2>
 
       {loadingSpinner ? (
         <Spinner />
       ) : error ? (
-        <div className={styles.error}>
-          Failed to load customers. Please try again later.
-        </div>
+        <div className={styles.error}>{CUSTOMER_SUMMARY.ERROR_MESSAGE}</div>
       ) : (
         <Table
           data={customers}
-          columns={customerColumns}
+          columns={CUSTOMER_SUMMARY_TABLE_COLUMNS}
           onRowClick={(row) => navigate(`/rewards/${row.customerId}`)}
         />
       )}
     </div>
   );
 };
-
 
 CustomersList.propTypes = {
   customers: PropTypes.arrayOf(

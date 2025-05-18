@@ -1,17 +1,22 @@
 import { mockCustomerData } from "../MockData/mockDataGenerator";
 import logger from "../Loggers/loggers";
+import { API_CONFIG } from "./apiConstants";
+
+const getRandomDelay = () =>
+  API_CONFIG.FETCH_DELAY_MIN +
+  Math.random() * (API_CONFIG.FETCH_DELAY_MAX - API_CONFIG.FETCH_DELAY_MIN);
 
 // Simulates fetching all transactions
-export const fetchTransactions = () => {
-  const delay = 1000 + Math.random() * 500;
-  const shouldFail = Math.random() < 0.1;
+export const fetchCustomers = () => {
+  const delay = getRandomDelay();
+  const shouldFail = Math.random() < API_CONFIG.FETCH_CUSTOMERS_FAILURE_RATE;
 
   logger.info("Calling fetchTransactions API");
 
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) {
-        const errorMsg = "Failed to fetch transactions.";
+        const errorMsg = API_CONFIG.ERROR_MESSAGES.FETCH_TRANSACTIONS;
         logger.error("fetchTransactions failed", { error: errorMsg });
         reject(errorMsg);
       } else {
@@ -26,15 +31,15 @@ export const fetchTransactions = () => {
 
 // Simulates fetching a customer by ID
 export const fetchCustomer = (customerId) => {
-  const delay = 1000 + Math.random() * 500;
-  const shouldFail = Math.random() < 0.1;
+  const delay = getRandomDelay();
+  const shouldFail = Math.random() < API_CONFIG.FETCH_CUSTOMER_FAILURE_RATE;
 
   logger.info("Calling fetchCustomer API", { customerId });
 
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) {
-        const errorMsg = "Failed to fetch transactions.";
+        const errorMsg = API_CONFIG.ERROR_MESSAGES.FETCH_TRANSACTIONS;
         logger.error("fetchCustomer failed", { customerId, error: errorMsg });
         reject(errorMsg);
       } else {
@@ -48,7 +53,9 @@ export const fetchCustomer = (customerId) => {
             transactionCount: customer.transactions?.length,
           });
         } else {
-          logger.warn("fetchCustomer found no matching customer", { customerId });
+          logger.warn("fetchCustomer found no matching customer", {
+            customerId,
+          });
         }
 
         resolve(customer);
