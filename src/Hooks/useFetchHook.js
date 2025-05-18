@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 
-const useFetch = (fetchFn, dependecies = []) => {
-  const [loading, setLoading] = useState();
-  const [data, setData] = useState();
-  const [error, setError] = useState();
+const useFetch = (fetchFn, disableIntialLoad = false, dependecies = []) => {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
+  const [error, setError] = useState("");
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -19,12 +19,13 @@ const useFetch = (fetchFn, dependecies = []) => {
           typeof err === "string" ? err : err.message || "Unknown error"
         );
         setLoading(false);
+        setData(null);
       });
   }, dependecies);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };
 };

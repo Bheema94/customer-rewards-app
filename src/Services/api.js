@@ -2,7 +2,7 @@ import { mockCustomerData } from "../MockData/mockDataGenerator";
 import logger from "../Loggers/loggers";
 
 // Simulates fetching all transactions
-export const fetchTransactions = () => {
+export const fetchCustomers = () => {
   const delay = 1000 + Math.random() * 500;
   const shouldFail = Math.random() < 0.1;
 
@@ -29,6 +29,8 @@ export const fetchCustomer = (customerId) => {
   const delay = 1000 + Math.random() * 500;
   const shouldFail = Math.random() < 0.1;
 
+  console.log(shouldFail);
+
   logger.info("Calling fetchCustomer API", { customerId });
 
   return new Promise((resolve, reject) => {
@@ -48,7 +50,9 @@ export const fetchCustomer = (customerId) => {
             transactionCount: customer.transactions?.length,
           });
         } else {
-          logger.warn("fetchCustomer found no matching customer", { customerId });
+          logger.warn("fetchCustomer found no matching customer", {
+            customerId,
+          });
         }
 
         resolve(customer);

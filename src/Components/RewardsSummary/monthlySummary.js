@@ -4,19 +4,20 @@ import { fetchCustomer } from "../../Services/api";
 import useFetch from "../../Hooks/useFetchHook";
 import { calculateRewardPoints } from "../../Utlis/RewardsUtils";
 import dayjs from "dayjs";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { Pagination, Spinner, FilterBar } from "../../Shared";
+import { useParams, useNavigate } from "react-router-dom";
+import { Pagination, Spinner, FilterBar, Button } from "../../Shared";
 import styles from "./monthlySummary.module.scss";
-import PropTypes from "prop-types";
 import {
-  getRecent3MonthsKeys,
-  sortMonthKeysDesc,
-} from "../../Utlis/dateHelpers";
+  MONTHLY_SUMMARY_LABELS,
+  MONTHLY_SUMMARY_TABLE_COLUMNS,
+  ROWS_PER_PAGE,
+  LATEST_MONTHS_KEY,
+} from "./constants";
+import { sortMonthKeysDesc } from "../../Utlis/dateHelpers";
 
 const MonthlySummary = () => {
   const { customerId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const {
     data: customer,
@@ -25,10 +26,18 @@ const MonthlySummary = () => {
   } = useFetch(() => fetchCustomer(customerId));
 
   const [filteredMonthlyRewards, setFilteredMonthlyRewards] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [monthOptions, setMonthOptions] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [initialized, setInitialized] = useState(false);
 
   const customerUpdateData = useMemo(() => {
+    if (!customer?.transactions) return null;
+
     const rewardsByMonthMap = {};
-    customer?.transactions?.forEach((txn) => {
+
+    customer.transactions.forEach((txn) => {
       const monthKey = dayjs(txn.date).format("MMM-YYYY");
       const pts = calculateRewardPoints(txn.amount);
       if (!rewardsByMonthMap[monthKey]) {
@@ -44,19 +53,20 @@ const MonthlySummary = () => {
         rewardPoints: pts,
       });
     });
+
     return {
       ...customer,
-      monthlyRewards: Object.values(rewardsByMonthMap),
+      monthlyRewards: Object.values(rewardsByMonthMap).sort((a, b) =>
+        dayjs(b.month, "MMM-YYYY").diff(dayjs(a.month, "MMM-YYYY"))
+      ),
     };
   }, [customer]);
 
-  const allMonthKeys = useMemo(
-    () =>
-      sortMonthKeysDesc(
-        customerUpdateData?.monthlyRewards.map((m) => m.month) || []
-      ),
-    [customerUpdateData]
-  );
+  const allMonthKeys = useMemo(() => {
+    return sortMonthKeysDesc(
+      customerUpdateData?.monthlyRewards.map((m) => m.month) || []
+    );
+  }, [customerUpdateData]);
 
   const yearOptions = useMemo(() => {
     const years = allMonthKeys.map((key) => key.split("-")[1]);
@@ -65,25 +75,27 @@ const MonthlySummary = () => {
       .map((year) => ({ value: year, label: year }));
   }, [allMonthKeys]);
 
-  const latestYear = yearOptions[0]?.value;
-
-  const [selectedYear, setSelectedYear] = useState(null);
-  const [monthOptions, setMonthOptions] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(null);
-  const [initialized, setInitialized] = useState(false);
-
-  // Initial year & month setup
+  // Initialize year & month dropdowns
   useEffect(() => {
     if (!initialized && yearOptions.length > 0) {
-      const defaultYear = yearOptions[0];
+      const latestYear = yearOptions[0];
       const monthsForYear = allMonthKeys.filter(
-        (key) => key.split("-")[1] === defaultYear.value
+        (key) => key.split("-")[1] === latestYear.value
       );
-      const recentMonths = monthsForYear.slice(0, 3);
 
-      setSelectedYear(defaultYear);
-      setMonthOptions([...recentMonths.map((m) => ({ value: m, label: m }))]);
-      setSelectedMonth({ value: recentMonths[0], label: recentMonths[0] });
+      const monthNames = monthsForYear.map((key) => key.split("-")[0]);
+
+      const options = [
+        {
+          value: LATEST_MONTHS_KEY,
+          label: MONTHLY_SUMMARY_LABELS.LATEST_THREE_MONTHS_LABEL,
+        },
+        ...monthNames.map((m) => ({ value: m, label: m })),
+      ];
+
+      setSelectedYear(latestYear);
+      setMonthOptions(options);
+      setSelectedMonth(options[0]);
       setInitialized(true);
     }
   }, [yearOptions, allMonthKeys, initialized]);
@@ -91,55 +103,58 @@ const MonthlySummary = () => {
   const handleFilterChange = useCallback(
     (month, year) => {
       if (year && year.value !== selectedYear?.value) {
-        // Year changed
-        setSelectedYear(year);
-        const months = allMonthKeys.filter(
+        const monthsInYear = allMonthKeys.filter(
           (key) => key.split("-")[1] === year.value
         );
-        const options = [...months.map((m) => ({ value: m, label: m }))];
+        const monthNames = monthsInYear.map((key) => key.split("-")[0]);
+
+        const options = [
+          {
+            value: LATEST_MONTHS_KEY,
+            label: MONTHLY_SUMMARY_LABELS.LATEST_THREE_MONTHS_LABEL,
+          },
+          ...monthNames.map((m) => ({ value: m, label: m })),
+        ];
+
+        setSelectedYear(year);
         setMonthOptions(options);
-        setSelectedMonth(null); // Clear selection for new year
+        setSelectedMonth(null);
+        setFilteredMonthlyRewards([]);
+        setCurrentPage(1);
+        return;
       }
 
       if (month && month.value !== selectedMonth?.value) {
-        // Month changed
         setSelectedMonth(month);
+        setCurrentPage(1);
       }
-
-      setCurrentPage(1);
     },
-    [allMonthKeys, selectedYear, selectedMonth]
+    [selectedYear, selectedMonth, allMonthKeys]
   );
 
-  // Filter transactions
   useEffect(() => {
-    if (!customer || !selectedMonth?.value || !selectedYear?.value) return;
+    if (!customerUpdateData || !selectedYear || !selectedMonth?.value) return;
 
-    const txns = customer.transactions.filter(
-      (t) => dayjs(t.date).format("MMM-YYYY") === selectedMonth.value
-    );
+    const filtered = customerUpdateData.monthlyRewards.filter((r) => {
+      const [month, year] = r.month.split("-");
+      const isLatest = selectedMonth.value === LATEST_MONTHS_KEY;
 
-    const map = {};
-    txns.forEach((t) => {
-      const key = dayjs(t.date).format("MMM-YYYY");
-      const pts = calculateRewardPoints(t.amount);
-      if (!map[key])
-        map[key] = { month: key, totalPoints: 0, transactions: [] };
-      map[key].totalPoints += pts;
-      map[key].transactions.push({ ...t, rewardPoints: pts });
+      if (isLatest) {
+        const yearMonths = allMonthKeys
+          .filter((k) => k.endsWith(`-${selectedYear.value}`))
+          .slice(0, 3)
+          .map((k) => k.split("-")[0]);
+        return year === selectedYear.value && yearMonths.includes(month);
+      }
+
+      return year === selectedYear.value && month === selectedMonth.value;
     });
 
-    const newMonthly = Object.values(map).sort((a, b) =>
-      dayjs(b.month, "MMM-YYYY").diff(dayjs(a.month, "MMM-YYYY"))
-    );
-    setFilteredMonthlyRewards(newMonthly);
-  }, [customer, selectedMonth, selectedYear]);
+    setFilteredMonthlyRewards(filtered);
+  }, [selectedMonth, selectedYear, customerUpdateData, allMonthKeys]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-
+  const indexOfLastRow = currentPage * ROWS_PER_PAGE;
+  const indexOfFirstRow = indexOfLastRow - ROWS_PER_PAGE;
   const currentRows = filteredMonthlyRewards.slice(
     indexOfFirstRow,
     indexOfLastRow
@@ -147,14 +162,20 @@ const MonthlySummary = () => {
 
   const handleRowClick = useCallback(
     (row) => {
-      const [m, y] = row.month.split("-");
-      navigate(`/rewards/${customerId}/transactions?month=${m}&year=${y}`);
+      const [month, year] = row.month.split("-");
+      navigate(
+        `/rewards/${customerId}/transactions?month=${month}&year=${year}`
+      );
     },
     [navigate, customerId]
   );
 
   return (
     <div className={styles.wrapper}>
+      <div className={styles.backButtonWrapper}>
+        <Button onClick={() => navigate(`/`)} label="Back" />
+      </div>
+
       <FilterBar
         monthOptions={monthOptions}
         yearOptions={yearOptions}
@@ -163,7 +184,7 @@ const MonthlySummary = () => {
         onFilterChange={handleFilterChange}
       />
 
-      <h2>Monthly Summary Reward Points</h2>
+      <h2>{MONTHLY_SUMMARY_LABELS.TITLE}</h2>
 
       {loading ? (
         <div className="spinnerWrapper" role="status">
@@ -171,29 +192,28 @@ const MonthlySummary = () => {
           <Spinner />
         </div>
       ) : error ? (
-        <div className={styles.error}>Error loading customer data.</div>
-      ) : !filteredMonthlyRewards.length ? (
-        <div className={styles.noData}>
-          No transactions found for the selected filter.
+        <div className={styles.error}>
+          {MONTHLY_SUMMARY_LABELS.ERROR_MESSAGE}
         </div>
-      ) : selectedYear && !selectedMonth?.value ? (
+      ) : !customerUpdateData ? (
+        <div className={styles.error}>No customer data found.</div>
+      ) : !selectedMonth && monthOptions.length > 0 ? (
         <div className={styles.noData}>
-          Select a month to check reward points.
+          {MONTHLY_SUMMARY_LABELS.SELECT_MONTH}
         </div>
+      ) : filteredMonthlyRewards.length === 0 ? (
+        <div className={styles.noData}>{MONTHLY_SUMMARY_LABELS.NO_DATA}</div>
       ) : (
         <>
           <Table
             data={currentRows}
-            columns={[
-              { header: "Month", accessor: "month" },
-              { header: "Total Points", accessor: "totalPoints" },
-            ]}
+            columns={MONTHLY_SUMMARY_TABLE_COLUMNS}
             onRowClick={handleRowClick}
-            getRowTestId={(row) => `summary-row-${row.month}-${row.year}`}
+            getRowTestId={(row) => `summary-row-${row.month}`}
           />
           <Pagination
             totalItems={filteredMonthlyRewards.length}
-            itemsPerPage={rowsPerPage}
+            itemsPerPage={ROWS_PER_PAGE}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
           />
@@ -201,10 +221,6 @@ const MonthlySummary = () => {
       )}
     </div>
   );
-};
-
-MonthlySummary.propTypes = {
-  customerId: PropTypes.string,
 };
 
 export default MonthlySummary;
