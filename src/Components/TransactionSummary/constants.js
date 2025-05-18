@@ -5,8 +5,9 @@ export const TRANSACTION_DETAILS = Object.freeze({
   ERROR_MESSAGE: "Error loading customer data.",
   NO_DATA: "No transactions found for the selected filter.",
   SELECT_MONTH: "Select a month to check transactions details.",
-  MONTH : "month",
-  YEAR : "year"
+  MONTH: "month",
+  YEAR: "year",
+  BACK: "Back",
 });
 
 export const TRANSACTION_COLUMNS = Object.freeze([

@@ -5,6 +5,8 @@ export const MONTHLY_SUMMARY_LABELS = Object.freeze({
   SELECT_MONTH: "Select a month to check reward points.",
   LATEST_THREE_MONTHS_LABEL: "Latest 3 Months",
   LATEST: "Latest",
+  BACK: "Back",
+  CUSTOMER_DATA_NOT_FOUND: "No customer data found.",
 });
 
 export const MONTHLY_SUMMARY_TABLE_COLUMNS = Object.freeze([

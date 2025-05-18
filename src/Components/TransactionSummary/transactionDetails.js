@@ -36,8 +36,6 @@ const TransactionDetails = () => {
     refetch,
   } = useFetch(() => fetchCustomer(customerId));
 
-  console.log(customer, loading, error);
-
   const yearOptions = useMemo(
     () => getYearOptions(customer?.transactions),
     [customer]
@@ -45,12 +43,12 @@ const TransactionDetails = () => {
 
   const monthOptions = useMemo(() => {
     if (!customer || !selectedYear) return [];
-    return getMonthOptionsByYear(customer.transactions, selectedYear.value);
+    return getMonthOptionsByYear(customer?.transactions, selectedYear?.value);
   }, [customer, selectedYear]);
 
   // Set default year from query or first available
   useEffect(() => {
-    if (customer && yearOptions.length && !selectedYear) {
+    if (customer && yearOptions?.length && !selectedYear) {
       const defaultYear =
         yearOptions.find((y) => y.value === yearFromQuery) || yearOptions[0];
       setSelectedYear(defaultYear);
@@ -65,7 +63,7 @@ const TransactionDetails = () => {
       monthFromQuery &&
       selectedYear
     ) {
-      const defaultMonth = monthOptions.find((m) => m.value === monthFromQuery);
+      const defaultMonth = monthOptions?.find((m) => m.value === monthFromQuery);
       setSelectedMonth(defaultMonth || null);
     }
   }, [monthOptions, selectedMonth, monthFromQuery, selectedYear]);
@@ -123,12 +121,11 @@ const TransactionDetails = () => {
     navigate(`/rewards/${customerId}`);
   };
 
-  console.log("filteredTransactions/// ", filteredTransactions);
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.backButtonWrapper}>
-        <Button onClick={toMonthlySummaryPage} label="Back" />
+        <Button onClick={toMonthlySummaryPage} label={TRANSACTION_DETAILS.BACK} />
       </div>
 
       <FilterBar

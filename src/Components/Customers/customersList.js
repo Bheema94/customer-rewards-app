@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import PropTypes from "prop-types";
 import Table from "../Table/table";
 import { fetchCustomers } from "../../Services/api";
@@ -14,9 +14,8 @@ const CustomersList = () => {
 
   const { data, loading: loadingSpinner, error } = useFetch(fetchCustomers);
 
-  console.log(data, loadingSpinner, error);
-
   const customers = useMemo(() => {
+    if (!data) return [];
     return data?.map((customer) => {
       const totalRewardPoints = customer?.transactions?.reduce((acc, txn) => {
         return acc + calculateRewardPoints(txn.amount);

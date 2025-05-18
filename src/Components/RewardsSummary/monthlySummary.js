@@ -34,9 +34,7 @@ const MonthlySummary = () => {
 
   const customerUpdateData = useMemo(() => {
     if (!customer?.transactions) return null;
-
     const rewardsByMonthMap = {};
-
     customer.transactions.forEach((txn) => {
       const monthKey = dayjs(txn.date).format("MMM-YYYY");
       const pts = calculateRewardPoints(txn.amount);
@@ -103,11 +101,10 @@ const MonthlySummary = () => {
   const handleFilterChange = useCallback(
     (month, year) => {
       if (year && year.value !== selectedYear?.value) {
-        const monthsInYear = allMonthKeys.filter(
-          (key) => key.split("-")[1] === year.value
+        const monthsInYear = allMonthKeys?.filter(
+          (key) => key?.split("-")[1] === year?.value
         );
-        const monthNames = monthsInYear.map((key) => key.split("-")[0]);
-
+        const monthNames = monthsInYear?.map((key) => key?.split("-")[0]);
         const options = [
           {
             value: LATEST_MONTHS_KEY,
@@ -173,7 +170,10 @@ const MonthlySummary = () => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.backButtonWrapper}>
-        <Button onClick={() => navigate(`/`)} label="Back" />
+        <Button
+          onClick={() => navigate(`/`)}
+          label={MONTHLY_SUMMARY_LABELS.BACK}
+        />
       </div>
 
       <FilterBar
@@ -187,17 +187,16 @@ const MonthlySummary = () => {
       <h2>{MONTHLY_SUMMARY_LABELS.TITLE}</h2>
 
       {loading ? (
-        <div className="spinnerWrapper" role="status">
-          <div className="loader" />
-          <Spinner />
-        </div>
+        <Spinner />
       ) : error ? (
         <div className={styles.error}>
           {MONTHLY_SUMMARY_LABELS.ERROR_MESSAGE}
         </div>
       ) : !customerUpdateData ? (
-        <div className={styles.error}>No customer data found.</div>
-      ) : !selectedMonth && monthOptions.length > 0 ? (
+        <div className={styles.error}>
+          {MONTHLY_SUMMARY_LABELS.CUSTOMER_DATA_NOT_FOUND}
+        </div>
+      ) : selectedYear && !selectedMonth && monthOptions.length > 0 ? (
         <div className={styles.noData}>
           {MONTHLY_SUMMARY_LABELS.SELECT_MONTH}
         </div>

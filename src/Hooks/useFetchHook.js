@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 
-const useFetch = (fetchFn, disableIntialLoad = false, dependecies = []) => {
+const useFetch = (fetchFn, dependencies = []) => {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   const fetchData = useCallback(() => {
@@ -15,17 +15,17 @@ const useFetch = (fetchFn, disableIntialLoad = false, dependecies = []) => {
         setLoading(false);
       })
       .catch((err) => {
+        setData(null);
         setError(
           typeof err === "string" ? err : err.message || "Unknown error"
         );
         setLoading(false);
-        setData(null);
       });
-  }, dependecies);
+  }, dependencies);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   return { data, loading, error, refetch: fetchData };
 };

@@ -6,7 +6,7 @@ const Table = ({
   data = [],
   columns = [],
   onRowClick = () => null,
-  getRowTestId = () => undefined, // Optional test ID generator
+  getRowTestId = () => undefined,
 }) => {
   return (
     <div className={styles?.tableContainer}>
@@ -46,6 +46,7 @@ Table.propTypes = {
     PropTypes.shape({
       header: PropTypes.string.isRequired,
       accessor: PropTypes.string.isRequired,
+      Cell: PropTypes.func,
     })
   ).isRequired,
   onRowClick: PropTypes.func,
