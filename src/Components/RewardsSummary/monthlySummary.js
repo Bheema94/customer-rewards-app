@@ -192,15 +192,17 @@ const MonthlySummary = () => {
         <div className={styles.error}>
           {MONTHLY_SUMMARY_LABELS.ERROR_MESSAGE}
         </div>
-      ) : !customerUpdateData ? (
-        <div className={styles.error}>
-          {MONTHLY_SUMMARY_LABELS.CUSTOMER_DATA_NOT_FOUND}
-        </div>
-      ) : selectedYear && !selectedMonth && monthOptions.length > 0 ? (
+      ) : selectedYear &&
+        !selectedMonth &&
+        monthOptions.length > 0 &&
+        customerUpdateData &&
+        filteredMonthlyRewards.length > 0 ? (
         <div className={styles.noData}>
           {MONTHLY_SUMMARY_LABELS.SELECT_MONTH}
         </div>
-      ) : filteredMonthlyRewards.length === 0 ? (
+      ) : filteredMonthlyRewards.length === 0 &&
+        !customerUpdateData &&
+        initialized ? (
         <div className={styles.noData}>{MONTHLY_SUMMARY_LABELS.NO_DATA}</div>
       ) : (
         <>

@@ -21,6 +21,7 @@ const TransactionDetails = () => {
   const { customerId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [initialized, setInitialized] = useState(false);
 
   const monthFromQuery = searchParams.get(TRANSACTION_DETAILS.MONTH);
   const yearFromQuery = searchParams.get(TRANSACTION_DETAILS.YEAR);
@@ -55,6 +56,12 @@ const TransactionDetails = () => {
     }
   }, [customer, yearOptions, selectedYear, yearFromQuery]);
 
+  useEffect(() => {
+    if (customer) {
+      setInitialized(true);
+    }
+  }, [customer]);
+
   // Set default month from query if present
   useEffect(() => {
     if (
@@ -63,7 +70,9 @@ const TransactionDetails = () => {
       monthFromQuery &&
       selectedYear
     ) {
-      const defaultMonth = monthOptions?.find((m) => m.value === monthFromQuery);
+      const defaultMonth = monthOptions?.find(
+        (m) => m.value === monthFromQuery
+      );
       setSelectedMonth(defaultMonth || null);
     }
   }, [monthOptions, selectedMonth, monthFromQuery, selectedYear]);
@@ -120,12 +129,13 @@ const TransactionDetails = () => {
   const toMonthlySummaryPage = () => {
     navigate(`/rewards/${customerId}`);
   };
-
-
   return (
     <div className={styles.wrapper}>
       <div className={styles.backButtonWrapper}>
-        <Button onClick={toMonthlySummaryPage} label={TRANSACTION_DETAILS.BACK} />
+        <Button
+          onClick={toMonthlySummaryPage}
+          label={TRANSACTION_DETAILS.BACK}
+        />
       </div>
 
       <FilterBar
@@ -147,9 +157,13 @@ const TransactionDetails = () => {
         <Spinner />
       ) : error ? (
         <div className={styles.error}>{TRANSACTION_DETAILS.ERROR_MESSAGE}</div>
-      ) : selectedYear && !selectedMonth ? (
+      ) : customer &&
+        selectedYear &&
+        !selectedMonth &&
+        monthOptions.length > 0 &&
+        filteredTransactions.length > 0 ? (
         <div className={styles.noData}>{TRANSACTION_DETAILS.SELECT_MONTH}</div>
-      ) : selectedYear && selectedMonth && filteredTransactions.length === 0 ? (
+      ) : !customer && filteredTransactions.length === 0 && initialized ? (
         <div className={styles.noData}>{TRANSACTION_DETAILS.NO_DATA}</div>
       ) : (
         <>
