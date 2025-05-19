@@ -47,7 +47,8 @@ If the user selects the 'Latest Three Months' option from the months dropdown, t
 
 3. Clicking on a specific month in the summary table navigates the user to the transaction details page, where all transactions for that month are displayed along with their amounts, reward points, and paginated results.
 
-![image](https://github.com/user-attachments/assets/3b05a86d-9d9d-4113-bea4-d688f61a9023)
+![image](https://github.com/user-attachments/assets/ebece833-7053-423b-bed6-f7d1baafb142)
+
 
 Testcase success
 ![image](https://github.com/user-attachments/assets/92e7d697-6e82-42d2-95cb-2bf5eee5bacb)
