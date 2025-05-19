@@ -24,12 +24,13 @@ How to use the app
 
 2. Click on a customer navigate to their monthly rewards summary, including a detailed breakdown of rewards earned over the month.
 
-The component fetches customer data using the customer ID from the URL, automatically selects the most recent available year, and filters to display reward points for the most recent month within that year.
+The component fetches customer data using the customer ID from the URL, automatically selects the most recent available year, and by default displays reward points for the latest three months within that year. It also includes a back button to navigate to the previous page.
+
+By default, the months dropdown selects the latest three months, while also providing all available months for the selected year.
  
  Monthly Summary Rewards Summary
  
-![image](https://github.com/user-attachments/assets/32e7482b-caac-4b98-b45f-de86f91e95e3)
-
+![image](https://github.com/user-attachments/assets/a5afb92a-fab0-46bf-9f7d-118c6fb0024d)
 
 Use the year and month filters to select a specific time period and instantly view the rewards earned during that month.
 
