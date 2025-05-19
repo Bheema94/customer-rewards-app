@@ -34,7 +34,8 @@ By default, the months dropdown selects the latest three months, while also prov
 
 Use the year and month filters to select a specific time period and instantly view the rewards earned during that month.
 
-![image](https://github.com/user-attachments/assets/5f403c48-a09f-4c5a-8ab8-a4e0a9b67aef)
+![image](https://github.com/user-attachments/assets/7a023f69-0a15-4f30-98ef-ce8cfb4d5a44)
+
 
 When a year is selected, the month dropdown updates dynamically to show only the months available for that year. The previous month selection is cleared, prompting the user to select a new month.
 
