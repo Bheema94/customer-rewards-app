@@ -36,10 +36,13 @@ Use the year and month filters to select a specific time period and instantly vi
 
 ![image](https://github.com/user-attachments/assets/5f403c48-a09f-4c5a-8ab8-a4e0a9b67aef)
 
-When a Year is Selected the month dropdown updates dynamically to show only months that belong to the selected year.the month selection is cleared, and the user is prompted to select a month.
+When a year is selected, the month dropdown updates dynamically to show only the months available for that year. The previous month selection is cleared, prompting the user to select a new month.
 
-![image](https://github.com/user-attachments/assets/5d2cdfa6-a6e1-4404-b675-3ebe544d9055)
+![image](https://github.com/user-attachments/assets/7134ab1b-61a7-4410-80a4-b3374e755641)
 
+If the user selects the 'Latest Three Months' option from the months dropdown, the data is filtered to show only the most recent three months for the selected year.
+
+![image](https://github.com/user-attachments/assets/b02dc01b-f694-414a-999d-7ba9119f591f)
 
 
 3. Clicking on a specific month in the summary table navigates the user to the transaction details page, where all transactions for that month are displayed along with their amounts, reward points, and paginated results.
